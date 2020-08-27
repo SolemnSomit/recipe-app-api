@@ -1,13 +1,10 @@
+from core.models import Ingredient
 from django.contrib.auth import get_user_model
-from django.urls import reverse
 from django.test import TestCase
-
+from django.urls import reverse
+from recipe.serializers import IngredientSerializer
 from rest_framework import status
 from rest_framework.test import APIClient
-
-from core.models import Ingredient
-
-from recipe.serializers import IngredientSerializer
 
 INGREDIENTS_URL = reverse('recipe:ingredient-list')
 
@@ -52,13 +49,35 @@ class PrivateIngredientsApiTests(TestCase):
         self.assertEqual(res.data, serializer.data)
 
     def test_ingredients_limited_to_user(self):
-        """Test that only ingredients realted to autheticated user are returned"""
+        """
+        Test that only ingredients related to  the
+        authenticated user are returned
+        """
         test_user = sample_user(email='test2@test.com')
         Ingredient.objects.create(user=test_user, name='Avacado')
         ingredient = Ingredient.objects.create(user=self.user, name='Bread')
-        
+
         res = self.client.get(INGREDIENTS_URL)
-        
+
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 1)
         self.assertEqual(res.data[0]['name'], ingredient.name)
+
+    def test_create_ingredient_successful(self):
+        """Test create a new ingredient"""
+        payload = {'name': 'Cabbage'}
+        self.client.post(INGREDIENTS_URL, payload)
+
+        exists = Ingredient.objects.filter(
+            user=self.user,
+            name=payload['name']
+        ).exists()
+
+        self.assertTrue(exists)
+
+    def test_create_ingredient_invalid(self):
+        """Test creating invalid ingredients fail"""
+        payload = {'name': ''}
+        res = self.client.post(INGREDIENTS_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
