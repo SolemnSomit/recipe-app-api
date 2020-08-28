@@ -25,6 +25,7 @@ def sample_recipe(user, **params):
 
     return Recipe.objects.create(user=user, **defaults)
 
+
 class PublicTagsApiTest(TestCase):
     """Test the publicly available TAGS Api"""
 
